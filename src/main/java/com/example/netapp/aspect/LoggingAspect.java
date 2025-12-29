@@ -17,7 +17,7 @@ public class LoggingAspect {
 
     @Pointcut(
         "within(@org.springframework.web.bind.annotation.RestController *) || " +
-        "within(@org.springframework.stereotype.Service *)"
+        "within(@org.springframework.stereotype.Service *)"  
     )
     public void applicationLayer() {
     }

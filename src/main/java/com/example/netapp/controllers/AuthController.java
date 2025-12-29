@@ -51,8 +51,7 @@ public class AuthController {
             throw new RuntimeException("Invalid credentials");
         }
 
-        String token = jwt.generateToken(user.getUserId(),user.getRole() ,user.getEmail());
-        TokenResponse token_res = new TokenResponse(token);
+        String token = jwt.generateToken(user.getUserId(),user.getRole() ,user.getEmail(),user.getUsername());
         return new LoginResponse(user ,token);
     }
 }
