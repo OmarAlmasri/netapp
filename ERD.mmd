@@ -1,0 +1,71 @@
+erDiagram
+    USER ||--o{ APPOINTMENT : creates
+    USER ||--o{ SERVICE : provides
+    USER ||--o{ NOTIFICATION : receives
+    SERVICE ||--o{ APPOINTMENT : has
+    WORKING_SCHEDULE ||--o{ APPOINTMENT : constrains
+    APPOINTMENT ||--o{ NOTIFICATION : triggers
+    USER ||--o{ WORKING_SCHEDULE : defines
+
+    USER {
+        bigint userId PK
+        string email UK
+        string username UK
+        string password
+        enum role "ADMIN, STAFF, CUSTOMER"
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    SERVICE {
+        bigint serviceId PK
+        string serviceName
+        text description
+        int durationMinutes
+        decimal price
+        bigint providerId FK
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    WORKING_SCHEDULE {
+        bigint scheduleId PK
+        bigint userId FK "staff member"
+        enum dayOfWeek "MONDAY to SUNDAY"
+        time startTime
+        time endTime
+        date effectiveFrom
+        date effectiveTo
+        boolean isHoliday
+        string holidayReason
+        timestamp createdAt
+    }
+
+    APPOINTMENT {
+        bigint appointmentId PK
+        bigint customerId FK
+        bigint staffId FK
+        bigint serviceId FK
+        datetime appointmentDateTime
+        int durationMinutes
+        enum status "PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED"
+        text customerNotes
+        text adminNotes
+        bigint approvedBy FK "admin user"
+        timestamp approvedAt
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    NOTIFICATION {
+        bigint notificationId PK
+        bigint userId FK
+        bigint appointmentId FK
+        enum notificationType "APPOINTMENT_CREATED, APPOINTMENT_APPROVED, APPOINTMENT_REJECTED, APPOINTMENT_CANCELLED, APPOINTMENT_REMINDER"
+        string title
+        text message
+        boolean isRead
+        timestamp sentAt
+        timestamp readAt
+    }
