@@ -1,5 +1,6 @@
 package com.example.netapp.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -45,10 +46,8 @@ public class AppointmentEntity {
     @JoinColumn(name = "customer_id")
     private UserEntity customer;
 
-    @ManyToOne
-    @JoinColumn(name = "staff_id")
-    private UserEntity staff;
-
+    @Column(precision = 10, scale = 2, nullable = false)
+    private BigDecimal totalPrice;
     @ManyToOne
     @JoinColumn(name = "service_id")
     private ServiceEntity service;
@@ -67,6 +66,12 @@ public class AppointmentEntity {
     }
 	public Long getAppointmentId() {
 		return appointmentId;
+	}
+	public BigDecimal getTotalPrice() {
+		return totalPrice;
+	}
+	public void setTotalPrice(BigDecimal totalPrice) {
+		this.totalPrice = totalPrice;
 	}
 	public void setAppointmentId(Long appointmentId) {
 		this.appointmentId = appointmentId;
@@ -125,12 +130,7 @@ public class AppointmentEntity {
 	public void setCustomer(UserEntity customer) {
 		this.customer = customer;
 	}
-	public UserEntity getStaff() {
-		return staff;
-	}
-	public void setStaff(UserEntity staff) {
-		this.staff = staff;
-	}
+
 	public ServiceEntity getService() {
 		return service;
 	}
