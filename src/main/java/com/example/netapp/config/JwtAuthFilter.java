@@ -35,18 +35,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String header = req.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
+        System.out.println("found a barer token from the sender ");
             String token = header.substring(7);
             String email = jwt.extractEmail(token);
             Long userId = jwt.extractUserId(token);
 
-            repo.findByEmail(email).ifPresent(user -> {
+            repo.findById(userId).ifPresent(user -> {
                 UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(email, null, List.of());
-                auth.setDetails(userId);
+                    new UsernamePasswordAuthenticationToken(
+                        user,               // principal
+                        null,
+                        user.getAuthorities()
+                    );
+
                 SecurityContextHolder.getContext().setAuthentication(auth);
             });
         }
-
+        System.out.println("finished the jwt auth filter ");
         chain.doFilter(req, res);
     }
 }

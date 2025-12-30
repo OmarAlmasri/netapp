@@ -12,19 +12,21 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import jakarta.persistence.GenerationType;
 import lombok.Data;
 
 @Entity
 @Data
+@Table(name = "appointments")
 public class AppointmentEntity {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long appointmentId;
 
-    private LocalDateTime appointmentDateTime;
-    private Integer durationMinutes;
+    private LocalDateTime startDateTime;
+    private LocalDateTime endDateTime;
 
     @Enumerated(EnumType.STRING)
     private AppointmentStatus status;

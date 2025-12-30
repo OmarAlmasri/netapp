@@ -7,17 +7,19 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Aspect
 @Component
+@Order(2)
 public class LoggingAspect {
 	private static final Logger log =
             LoggerFactory.getLogger(LoggingAspect.class);
 
     @Pointcut(
         "within(@org.springframework.web.bind.annotation.RestController *) || " +
-        "within(@org.springframework.stereotype.Service *)"
+        "within(@org.springframework.stereotype.Service *)"  
     )
     public void applicationLayer() {
     }
@@ -40,8 +42,8 @@ public class LoggingAspect {
         } catch (Exception ex) {
             log.error(
                 "method={} failed",
-                joinPoint.getSignature().toShortString(),
-                ex
+                joinPoint.getSignature().toShortString()
+                
             );
             throw ex;
         }

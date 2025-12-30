@@ -4,10 +4,18 @@ package com.example.netapp.entity;
 
 import jakarta.persistence.Id;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Collection;
+import java.util.List;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
@@ -26,7 +34,7 @@ import lombok.Setter;
 @Getter
 @Builder
 @Table(name = "users")
-public class UserEntity {
+public class UserEntity implements UserDetails {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,7 +47,9 @@ public class UserEntity {
     @Column(nullable = false)
     private String password;
     // this makes the customer as the default value for the role
-    private UserRole role = UserRole.customer;
+    @JsonIgnore
+    @Enumerated(EnumType.STRING)
+    private UserRole role = UserRole.CUSTOMER;
 	public long getUserId() {
 		return userId;
 	}
@@ -52,12 +62,14 @@ public class UserEntity {
 	public void setEmail(String email) {
 		this.email = email;
 	}
+	@Override 
 	public String getUsername() {
 		return username;
 	}
 	public void setUsername(String username) {
 		this.username = username;
 	}
+	@Override
 	public String getPassword() {
 		return password;
 	}
@@ -73,9 +85,23 @@ public class UserEntity {
     
     
     
-    
-    
-    
+    @JsonIgnore
+	@Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+    	System.out.println("inside the getAuthorities function from the UserEntity");
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    } 
+   /*
+    * These methods are hard coded to spring security , and there functions with these values needs to be like this . 
+    */
+    @JsonIgnore
+	@Override public boolean isAccountNonExpired() { return true; }
+    @JsonIgnore
+    @Override public boolean isAccountNonLocked() { return true; }
+    @JsonIgnore
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @JsonIgnore
+    @Override public boolean isEnabled() { return true; } 
     
     
     
