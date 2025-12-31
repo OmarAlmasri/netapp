@@ -16,6 +16,7 @@ import com.example.netapp.entity.NotificationEntity;
 import com.example.netapp.entity.NotificationType;
 import com.example.netapp.entity.UserEntity;
 import com.example.netapp.repository.NotificationRepository;
+import com.example.netapp.repository.UserRepository;
 
 @Service
 public class NotificationService {
@@ -25,6 +26,9 @@ public class NotificationService {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Transactional
     public void sendNotificationToUser(UserEntity user, String title, String message, NotificationType type,
@@ -40,7 +44,6 @@ public class NotificationService {
 
         NotificationEntity savedNotification = notificationRepository.save(notification);
 
-        // Create DTO for WebSocket Message
         NotificationDTO notificationDTO = new NotificationDTO();
         notificationDTO.setNotificationId(savedNotification.getNotificaitonId());
         notificationDTO.setTitle(title);
@@ -53,22 +56,21 @@ public class NotificationService {
             notificationDTO.setAppointmentDetails(formatAppointmentDetails(appointment));
         }
 
-        // Send Realtime Notification via WebSocket
-        // Destination: /user/{userId}/queue/notifications
-        messagingTemplate.convertAndSendToUser(Long.toString(user.getUserId()), "/queue/notifications",
-                notificationDTO);
+        messagingTemplate.convertAndSendToUser(user.getUsername(), "/queue/notifications", notificationDTO);
     }
 
     @Transactional
     public void notifyAppointmentCreated(AppointmentEntity appointment) {
-        // Notify Customer
-        sendNotificationToUser(appointment.getCustomer(), "Appointment Created",
+        sendNotificationToUser(
+                appointment.getCustomer(),
+                "Appointment Created",
                 "Your appointment has been created and is pending approval",
                 NotificationType.APPOINTMENT_CREATED,
                 appointment);
 
-        // Notify Staff
-        sendNotificationToUser(appointment.getStaff(), "New Appointment Assignment",
+        sendNotificationToUser(
+                appointment.getStaff(),
+                "New Appointment Assignment",
                 "You have been assigned a new appointment pending approval.",
                 NotificationType.APPOINTMENT_CREATED,
                 appointment);
@@ -118,11 +120,10 @@ public class NotificationService {
     }
 
     @Transactional
-    public void markAsRead(Long notifcationId, UserEntity user) {
-        NotificationEntity notification = notificationRepository.findById(notifcationId)
+    public void markAsRead(Long notificationId, UserEntity user) {
+        NotificationEntity notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
 
-        // Verify Notification belongs to the user
         if (notification.getUser().getUserId() != user.getUserId()) {
             throw new RuntimeException("Unauthorized access to notification");
         }
@@ -131,7 +132,7 @@ public class NotificationService {
         notification.setReadAt(LocalDateTime.now());
         notificationRepository.save(notification);
     }
-    
+
     @Transactional
     public void markAllAsRead(UserEntity user) {
         List<NotificationEntity> unreadNotifications = notificationRepository
@@ -143,7 +144,7 @@ public class NotificationService {
         }
         notificationRepository.saveAll(unreadNotifications);
     }
-    
+
     public List<NotificationDTO> getUserNotifications(UserEntity user) {
         List<NotificationEntity> notifications = notificationRepository.findByUserOrderBySentAtDesc(user);
 
@@ -154,7 +155,36 @@ public class NotificationService {
         return notificationRepository.countByUserAndIsReadFalse(user);
     }
 
-    // Helpers
+    /**
+     * Broadcast notification to all users
+     * 
+     * @param title   Notification title
+     * @param message Notification message
+     * @param type    Notification type
+     */
+    @Transactional
+    public void broadcastNotification(String title, String message, NotificationType type) {
+        userRepository.findAll().forEach(user -> {
+            sendNotificationToUser(user, title, message, type, null);
+        });
+    }
+
+    /**
+     * Send notification to a specific user by user ID
+     * 
+     * @param userId  Target user ID
+     * @param title   Notification title
+     * @param message Notification message
+     * @param type    Notification type
+     * @throws RuntimeException if user not found
+     */
+    @Transactional
+    public void sendNotificationToUserById(Long userId, String title, String message, NotificationType type) {
+        UserEntity targetUser = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        sendNotificationToUser(targetUser, title, message, type, null);
+    }
 
     private NotificationDTO convertToDTO(NotificationEntity entity) {
         NotificationDTO dto = new NotificationDTO();
