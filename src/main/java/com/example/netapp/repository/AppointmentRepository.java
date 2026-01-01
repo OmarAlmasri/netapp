@@ -24,31 +24,28 @@ public interface AppointmentRepository extends JpaRepository<AppointmentEntity, 
      * JPQL compatible with H2, MySQL, PostgreSQL
      */
     @Query("""
-            SELECT COUNT(a) > 0
-            FROM AppointmentEntity a
-            WHERE a.status <> 'CANCELLED'
-              AND a.service = :service
-              AND a.startDateTime < :end
-              AND a.endDateTime > :start
-        """)
-        boolean existsServiceCollision(
-            @Param("service") ServiceEntity service,
+                SELECT COUNT(a) > 0
+                FROM AppointmentEntity a
+                WHERE a.status <> 'CANCELLED'
+                  AND a.startDateTime < :end
+                  AND a.endDateTime > :start
+            """)
+    boolean existsAnyCollision(
             @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end
-        );
+            @Param("end") LocalDateTime end);
 
-        @Query("""
-            SELECT a
-            FROM AppointmentEntity a
-            WHERE a.status <> 'CANCELLED'
-              AND a.service = :service
-              AND a.startDateTime >= :dayStart
-              AND a.endDateTime <= :dayEnd
-            ORDER BY a.startDateTime
-        """)
-        List<AppointmentEntity> findAppointmentsForDay(
-            @Param("service") ServiceEntity service,
-            @Param("dayStart") LocalDateTime dayStart,
-            @Param("dayEnd") LocalDateTime dayEnd
-        );
+    /*
+     * fetch all appointments that collide with a given interval
+     * Useful if you want to return conflicting appointments instead of just boolean
+     */
+    @Query("""
+                SELECT a
+                FROM AppointmentEntity a
+                WHERE a.status <> 'CANCELLED'
+                  AND a.startDateTime < :end
+                  AND a.endDateTime > :start
+            """)
+    List<AppointmentEntity> findCollidingAppointments(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 }

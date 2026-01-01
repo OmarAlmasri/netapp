@@ -15,14 +15,12 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import lombok.Data;
 
 @Entity
-@Data
 @Table(name = "service")
 public class ServiceEntity {
-    
-	@Id
+
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long serviceId;
 
@@ -48,81 +46,85 @@ public class ServiceEntity {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
     public Long getServiceId() {
-		return serviceId;
-	}
+        return serviceId;
+    }
 
-	public void setServiceId(Long serviceId) {
-		this.serviceId = serviceId;
-	}
+    public void setServiceId(Long serviceId) {
+        this.serviceId = serviceId;
+    }
 
-	public String getServiceName() {
-		return serviceName;
-	}
+    public String getServiceName() {
+        return serviceName;
+    }
 
-	public void setServiceName(String serviceName) {
-		this.serviceName = serviceName;
-	}
+    public void setServiceName(String serviceName) {
+        this.serviceName = serviceName;
+    }
 
-	public String getDescription() {
-		return description;
-	}
+    public String getDescription() {
+        return description;
+    }
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-	public Double getPrice() {
-		return price;
-	}
+    public Integer getDurationMinutes() {
+        return durationMinutes;
+    }
 
-	public void setPrice(Double price) {
-		this.price = price;
-	}
+    public void setDurationMinutes(Integer durationMinutes) {
+        this.durationMinutes = durationMinutes;
+    }
 
-	public Boolean getIsActive() {
-		return isActive;
-	}
+    public Double getPrice() {
+        return price;
+    }
 
-	public void setIsActive(Boolean isActive) {
-		this.isActive = isActive;
-	}
+    public void setPrice(Double price) {
+        this.price = price;
+    }
 
-	public Integer getBufferMinutes() {
-		return bufferMinutes;
-	}
+    public Boolean getIsActive() {
+        return isActive;
+    }
 
-	public void setBufferMinutes(Integer bufferMinutes) {
-		this.bufferMinutes = bufferMinutes;
-	}
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
 
-	public List<ServiceWorkingHours> getWorkingHours() {
-		return workingHours;
-	}
+    public UserEntity getProvider() {
+        return provider;
+    }
 
-	public void setWorkingHours(List<ServiceWorkingHours> workingHours) {
-		this.workingHours = workingHours;
-	}
+    public void setProvider(UserEntity provider) {
+        this.provider = provider;
+    }
 
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 
-	public LocalDateTime getUpdatedAt() {
-		return updatedAt;
-	}
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 
-	public void setUpdatedAt(LocalDateTime updatedAt) {
-		this.updatedAt = updatedAt;
-	}
-
-	@PrePersist
-    void onCreate() { createdAt = LocalDateTime.now(); }
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
     @PreUpdate
-    void onUpdate() { updatedAt = LocalDateTime.now(); }
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

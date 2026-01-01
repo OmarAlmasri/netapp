@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Management Center</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-left h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status.disconnected {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .status.connected {
+            background: #10b981;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .connection-panel {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .connection-panel.collapsed {
+            display: none;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .form-row label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .notifications-container {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .notification-item.unread {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .notification-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .notification-title {
+            color: #667eea;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-mark-read {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .btn-mark-read:hover {
+            background: #bfdbfe;
+        }
+
+        .notification-body {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .notification-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .notification-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-unread {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+        }
+
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toggle-panel {
+            background: none;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+        .toggle-panel:hover {
+            color: #764ba2;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .management-panel {
+            background: #f9fafb;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .management-panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .user-search {
+            position: relative;
+        }
+
+        .user-search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+
+        .user-search-result {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background 0.2s;
+        }
+
+        .user-search-result:hover {
+            background: #f3f4f6;
+        }
+
+        .user-search-result:last-child {
+            border-bottom: none;
+        }
+
+        .selected-user {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #dbeafe;
+            color: #1e40af;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        .selected-user button {
+            background: none;
+            border: none;
+            color: #1e40af;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            margin-left: 8px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>🔔 Notification Management Center</h1>
+                <div class="status disconnected" id="connectionStatus">
+                    <span class="status-dot"></span>
+                    <span>Disconnected</span>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="totalCount">0</span>
+                    <span class="stat-label">Total</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value badge-danger" id="unreadCount">0</span>
+                    <span class="stat-label">Unread</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Connection Panel -->
+            <div class="connection-panel" id="connectionPanel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="color: #667eea; margin: 0;">Connection Settings</h2>
+                    <button class="toggle-panel" onclick="toggleConnectionPanel()">Hide</button>
+                </div>
+                <div class="form-row">
+                    <label>WebSocket URL:</label>
+                    <input type="text" id="wsUrl" value="http://localhost:8080/ws"
+                        placeholder="http://localhost:8080/ws">
+                </div>
+                <div class="form-row">
+                    <label>API Base URL:</label>
+                    <input type="text" id="apiBaseUrl" value="http://localhost:8080"
+                        placeholder="http://localhost:8080">
+                </div>
+                <div class="form-row">
+                    <label>JWT Token:</label>
+                    <input type="text" id="jwtToken" placeholder="Paste your JWT token here">
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="connectBtn" onclick="connectWebSocket()">Connect</button>
+                    <button class="btn btn-danger" id="disconnectBtn" onclick="disconnectWebSocket()"
+                        disabled>Disconnect</button>
+                    <button class="btn btn-secondary" onclick="loadNotifications()">Load History</button>
+                </div>
+            </div>
+            <div id="connectionPanelToggle" style="display: none; margin-bottom: 20px;">
+                <button class="toggle-panel" onclick="toggleConnectionPanel()">Show Connection Settings</button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs" id="tabsContainer">
+                <button class="tab active" onclick="switchTab('notifications')">📬 My Notifications</button>
+                <button class="tab" id="managementTabBtn" onclick="switchTab('management')" style="display: none;">⚙️
+                    Management</button>
+            </div>
+
+            <!-- Management Tab -->
+            <div id="managementTab" class="tab-content">
+                <div class="management-panel">
+                    <h2>📢 Send Notifications</h2>
+                    <div id="managementAlerts"></div>
+
+                    <!-- Broadcast Section -->
+                    <div style="margin-bottom: 30px; padding-bottom: 30px; border-bottom: 2px solid #e5e7eb;">
+                        <h3 style="color: #374151; margin-bottom: 15px; font-size: 18px;">Broadcast to All Users</h3>
+                        <div class="form-group">
+                            <label>Title:</label>
+                            <input type="text" id="broadcastTitle" placeholder="Enter notification title"
+                                value="System Announcement">
+                        </div>
+                        <div class="form-group">
+                            <label>Message:</label>
+                            <textarea id="broadcastMessage"
+                                placeholder="Enter notification message">This is a broadcast message to all users.</textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="sendBroadcast()">📢 Broadcast to All Users</button>
+                    </div>
+
+                    <!-- Send to Specific User Section -->
+                    <div>
+                        <h3 style="color: #374151; margin-bottom: 15px; font-size: 18px;">Send to Specific User</h3>
+                        <div class="form-group">
+                            <label>User ID:</label>
+                            <div class="user-search">
+                                <input type="number" id="targetUserId" placeholder="Enter user ID"
+                                    oninput="searchUser(this.value)">
+                                <div class="user-search-results" id="userSearchResults"></div>
+                            </div>
+                            <div id="selectedUserInfo"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Title:</label>
+                            <input type="text" id="userNotificationTitle" placeholder="Enter notification title"
+                                value="Personal Notification">
+                        </div>
+                        <div class="form-group">
+                            <label>Message:</label>
+                            <textarea id="userNotificationMessage"
+                                placeholder="Enter notification message">This is a personal notification.</textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="sendToUser()">📤 Send to User</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Tab -->
+            <div id="notificationsTab" class="tab-content active">
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" onclick="filterNotifications('all')"
+                            data-filter="all">All</button>
+                        <button class="filter-btn" onclick="filterNotifications('unread')"
+                            data-filter="unread">Unread</button>
+                        <button class="filter-btn" onclick="filterNotifications('read')"
+                            data-filter="read">Read</button>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" onclick="markAllAsRead()">Mark All Read</button>
+                        <button class="btn btn-secondary" onclick="loadNotifications()">Refresh</button>
+                    </div>
+                </div>
+
+                <!-- Notifications Container -->
+                <div class="notifications-container" id="notificationsContainer">
+                    <div class="loading" id="loadingIndicator" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Loading notifications...</p>
+                    </div>
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No notifications yet. Connect to start receiving real-time notifications!</p>
+                    </div>
+                    <div id="notificationList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let stompClient = null;
+        let notifications = new Map();
+        let currentFilter = 'all';
+        let apiBaseUrl = 'http://localhost:8080';
+        let userRole = null;
+
+        function getToken() {
+            return document.getElementById('jwtToken').value;
+        }
+
+        function getApiBaseUrl() {
+            return document.getElementById('apiBaseUrl').value || 'http://localhost:8080';
+        }
+
+        function toggleConnectionPanel() {
+            const panel = document.getElementById('connectionPanel');
+            const toggle = document.getElementById('connectionPanelToggle');
+            if (panel.classList.contains('collapsed')) {
+                panel.classList.remove('collapsed');
+                toggle.style.display = 'none';
+            } else {
+                panel.classList.add('collapsed');
+                toggle.style.display = 'block';
+            }
+        }
+
+        async function connectWebSocket() {
+            const wsUrl = document.getElementById('wsUrl').value;
+            const token = getToken();
+
+            if (!token) {
+                alert('Please enter your JWT token first!');
+                return;
+            }
+
+            if (stompClient && stompClient.connected) {
+                return;
+            }
+
+            updateConnectionStatus(false, 'Connecting...');
+
+            try {
+                const socket = new SockJS(wsUrl);
+                stompClient = Stomp.over(socket);
+                stompClient.debug = null;
+
+                const headers = {
+                    'Authorization': 'Bearer ' + token
+                };
+
+                stompClient.connect(headers,
+                    function (frame) {
+                        updateConnectionStatus(true);
+                        subscribeToNotifications();
+                        loadNotifications();
+                    },
+                    function (error) {
+                        updateConnectionStatus(false);
+                        alert('Connection failed: ' + error);
+                    }
+                );
+            } catch (error) {
+                updateConnectionStatus(false);
+                alert('Connection error: ' + error.message);
+            }
+        }
+
+        function subscribeToNotifications() {
+            if (stompClient && stompClient.connected) {
+                stompClient.subscribe('/user/queue/notifications', function (message) {
+                    const notification = JSON.parse(message.body);
+                    addNotification(notification, true);
+                    updateStats();
+                });
+            }
+        }
+
+        function disconnectWebSocket() {
+            if (stompClient) {
+                stompClient.disconnect();
+                stompClient = null;
+            }
+            updateConnectionStatus(false);
+        }
+
+        function updateConnectionStatus(connected, message = null) {
+            const statusDiv = document.getElementById('connectionStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            if (connected) {
+                statusDiv.innerHTML = '<span class="status-dot"></span><span>Connected</span>';
+                statusDiv.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusDiv.innerHTML = '<span class="status-dot"></span><span>' + (message || 'Disconnected') + '</span>';
+                statusDiv.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        async function loadNotifications() {
+            const token = getToken();
+            if (!token) {
+                alert('Please enter your JWT token first!');
+                return;
+            }
+
+            apiBaseUrl = getApiBaseUrl();
+            showLoading(true);
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/notification`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    notifications.clear();
+                    data.forEach(notif => {
+                        notifications.set(notif.notificationId, notif);
+                    });
+                    renderNotifications();
+                    updateStats();
+                } else {
+                    alert('Failed to load notifications: ' + response.statusText);
+                }
+            } catch (error) {
+                alert('Error loading notifications: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function updateUnreadCount() {
+            const token = getToken();
+            if (!token) return;
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/notification/unread-count`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('unreadCount').textContent = data.unreadCount || 0;
+                }
+            } catch (error) {
+                console.error('Error updating unread count:', error);
+            }
+        }
+
+        function addNotification(notification, isNew = false) {
+            notifications.set(notification.notificationId, notification);
+            if (isNew) {
+                renderNotifications();
+                updateStats();
+                showNotificationToast(notification);
+            }
+        }
+
+        function showNotificationToast(notification) {
+            // Optional: Show a toast notification for new messages
+            console.log('New notification:', notification.title);
+        }
+
+        async function markAsRead(notificationId) {
+            const token = getToken();
+            if (!token) return;
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/notification/${notificationId}/read`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (response.ok) {
+                    const notification = notifications.get(notificationId);
+                    if (notification) {
+                        notification.isRead = true;
+                        renderNotifications();
+                        updateStats();
+                    }
+                }
+            } catch (error) {
+                alert('Error marking notification as read: ' + error.message);
+            }
+        }
+
+        async function markAllAsRead() {
+            const token = getToken();
+            if (!token) {
+                alert('Please enter your JWT token first!');
+                return;
+            }
+
+            if (!confirm('Mark all notifications as read?')) return;
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/notification/read-all`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (response.ok) {
+                    notifications.forEach(notif => {
+                        notif.isRead = true;
+                    });
+                    renderNotifications();
+                    updateStats();
+                }
+            } catch (error) {
+                alert('Error marking all as read: ' + error.message);
+            }
+        }
+
+        function filterNotifications(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+            renderNotifications();
+        }
+
+        function renderNotifications() {
+            const container = document.getElementById('notificationList');
+            const emptyState = document.getElementById('emptyState');
+
+            let filteredNotifications = Array.from(notifications.values());
+
+            if (currentFilter === 'unread') {
+                filteredNotifications = filteredNotifications.filter(n => !n.isRead);
+            } else if (currentFilter === 'read') {
+                filteredNotifications = filteredNotifications.filter(n => n.isRead);
+            }
+
+            filteredNotifications.sort((a, b) => {
+                const timeA = new Date(a.sentAt || 0);
+                const timeB = new Date(b.sentAt || 0);
+                return timeB - timeA;
+            });
+
+            if (filteredNotifications.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            container.innerHTML = filteredNotifications.map(notif => {
+                const isUnread = !notif.isRead;
+                const timestamp = notif.sentAt ? new Date(notif.sentAt).toLocaleString() : 'Unknown';
+                const typeBadge = notif.type ? `<span class="notification-badge">${notif.type}</span>` : '';
+
+                return `
+                    <div class="notification-item ${isUnread ? 'unread' : ''}" data-id="${notif.notificationId}">
+                        <div class="notification-header">
+                            <h3 class="notification-title">${escapeHtml(notif.title)}</h3>
+                            <div class="notification-actions">
+                                ${isUnread ? `<button class="btn-icon btn-mark-read" onclick="markAsRead(${notif.notificationId})">Mark Read</button>` : ''}
+                                ${typeBadge}
+                            </div>
+                        </div>
+                        <div class="notification-body">${escapeHtml(notif.message)}</div>
+                        <div class="notification-footer">
+                            <span>⏰ ${timestamp}</span>
+                            ${isUnread ? '<span class="notification-badge badge-unread">Unread</span>' : '<span style="color: #9ca3af;">Read</span>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateStats() {
+            const total = notifications.size;
+            const unread = Array.from(notifications.values()).filter(n => !n.isRead).length;
+
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('unreadCount').textContent = unread;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function decodeJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (error) {
+                console.error('Error decoding JWT:', error);
+                return null;
+            }
+        }
+
+        function checkUserRole() {
+            const token = getToken();
+            if (!token) {
+                userRole = null;
+                return;
+            }
+
+            try {
+                const decoded = decodeJWT(token);
+                if (decoded && decoded.role) {
+                    userRole = decoded.role;
+                    updateManagementAccess();
+                } else {
+                    userRole = null;
+                    updateManagementAccess();
+                }
+            } catch (error) {
+                console.error('Error checking user role:', error);
+                userRole = null;
+                updateManagementAccess();
+            }
+        }
+
+        function updateManagementAccess() {
+            const managementTabBtn = document.getElementById('managementTabBtn');
+            const managementTab = document.getElementById('managementTab');
+
+            if (userRole === 'ADMIN' || userRole === 'STAFF') {
+                managementTabBtn.style.display = 'block';
+            } else {
+                managementTabBtn.style.display = 'none';
+                // If currently on management tab, switch to notifications
+                if (managementTab && managementTab.classList.contains('active')) {
+                    switchTab('notifications');
+                    document.querySelector('.tab').click();
+                }
+            }
+        }
+
+        function isAuthorized() {
+            return userRole === 'ADMIN' || userRole === 'STAFF';
+        }
+
+        function switchTab(tabName) {
+            if (tabName === 'management' && !isAuthorized()) {
+                showAlert('❌ Unauthorized: Only ADMIN and STAFF can access the Management panel', 'error');
+                return;
+            }
+
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertsContainer = document.getElementById('managementAlerts');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alertsContainer.innerHTML = '';
+            alertsContainer.appendChild(alert);
+
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                alert.style.transition = 'opacity 0.3s';
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        }
+
+        async function sendBroadcast() {
+            if (!isAuthorized()) {
+                showAlert('❌ Unauthorized: Only ADMIN and STAFF can send notifications', 'error');
+                return;
+            }
+
+            const token = getToken();
+            if (!token) {
+                showAlert('Please enter your JWT token first!', 'error');
+                return;
+            }
+
+            const title = document.getElementById('broadcastTitle').value.trim();
+            const message = document.getElementById('broadcastMessage').value.trim();
+
+            if (!title || !message) {
+                showAlert('Please fill in both title and message!', 'error');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to broadcast this notification to ALL users?')) {
+                return;
+            }
+
+            apiBaseUrl = getApiBaseUrl();
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/notification/broadcast`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ title, message })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showAlert('✅ ' + data.message, 'success');
+                    document.getElementById('broadcastTitle').value = '';
+                    document.getElementById('broadcastMessage').value = '';
+                } else {
+                    const error = await response.text();
+                    showAlert('❌ Failed to broadcast: ' + error, 'error');
+                }
+            } catch (error) {
+                showAlert('❌ Error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📢 Broadcast to All Users';
+            }
+        }
+
+        async function searchUser(query) {
+            const resultsDiv = document.getElementById('userSearchResults');
+
+            if (!query || query.length < 1) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            const token = getToken();
+            if (!token) return;
+
+            apiBaseUrl = getApiBaseUrl();
+
+            try {
+                const userId = parseInt(query);
+                if (isNaN(userId)) {
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
+
+                const response = await fetch(`${apiBaseUrl}/api/v1/users/${userId}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    resultsDiv.innerHTML = `
+                        <div class="user-search-result" onclick="selectUser(${user.userId}, '${escapeHtml(user.username)}', '${escapeHtml(user.email)}')">
+                            <strong>${escapeHtml(user.username)}</strong><br>
+                            <small>${escapeHtml(user.email)} - ID: ${user.userId}</small>
+                        </div>
+                    `;
+                    resultsDiv.style.display = 'block';
+                } else {
+                    resultsDiv.innerHTML = '<div class="user-search-result" style="color: #ef4444;">User not found</div>';
+                    resultsDiv.style.display = 'block';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="user-search-result" style="color: #ef4444;">Error searching user</div>';
+                resultsDiv.style.display = 'block';
+            }
+        }
+
+        function selectUser(userId, username, email) {
+            document.getElementById('targetUserId').value = userId;
+            document.getElementById('userSearchResults').style.display = 'none';
+
+            const selectedDiv = document.getElementById('selectedUserInfo');
+            selectedDiv.innerHTML = `
+                <div class="selected-user">
+                    <strong>Selected:</strong> ${escapeHtml(username)} (${escapeHtml(email)})
+                    <button onclick="clearSelectedUser()">×</button>
+                </div>
+            `;
+        }
+
+        function clearSelectedUser() {
+            document.getElementById('targetUserId').value = '';
+            document.getElementById('selectedUserInfo').innerHTML = '';
+        }
+
+        async function sendToUser() {
+            if (!isAuthorized()) {
+                showAlert('❌ Unauthorized: Only ADMIN and STAFF can send notifications', 'error');
+                return;
+            }
+
+            const token = getToken();
+            if (!token) {
+                showAlert('Please enter your JWT token first!', 'error');
+                return;
+            }
+
+            const userId = document.getElementById('targetUserId').value.trim();
+            const title = document.getElementById('userNotificationTitle').value.trim();
+            const message = document.getElementById('userNotificationMessage').value.trim();
+
+            if (!userId) {
+                showAlert('Please enter a user ID!', 'error');
+                return;
+            }
+
+            if (!title || !message) {
+                showAlert('Please fill in both title and message!', 'error');
+                return;
+            }
+
+            apiBaseUrl = getApiBaseUrl();
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/notification/send-to-user/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ title, message })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showAlert('✅ ' + data.message, 'success');
+                    document.getElementById('userNotificationTitle').value = '';
+                    document.getElementById('userNotificationMessage').value = '';
+                } else {
+                    const error = await response.text();
+                    showAlert('❌ Failed to send: ' + error, 'error');
+                }
+            } catch (error) {
+                showAlert('❌ Error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📤 Send to User';
+            }
+        }
+
+        // Close user search when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.user-search')) {
+                document.getElementById('userSearchResults').style.display = 'none';
+            }
+        });
+
+        // Auto-save and load token
+        document.getElementById('jwtToken').addEventListener('input', function (e) {
+            localStorage.setItem('notificationCenterToken', e.target.value);
+            checkUserRole();
+        });
+
+        document.getElementById('apiBaseUrl').addEventListener('input', function (e) {
+            localStorage.setItem('notificationCenterApiUrl', e.target.value);
+        });
+
+        window.onload = function () {
+            const savedToken = localStorage.getItem('notificationCenterToken');
+            const savedApiUrl = localStorage.getItem('notificationCenterApiUrl');
+
+            if (savedToken) {
+                document.getElementById('jwtToken').value = savedToken;
+                checkUserRole();
+            }
+            if (savedApiUrl) {
+                document.getElementById('apiBaseUrl').value = savedApiUrl;
+                apiBaseUrl = savedApiUrl;
+            }
+
+            // Auto-connect if token exists
+            if (savedToken) {
+                setTimeout(() => connectWebSocket(), 500);
+            }
+        };
+    </script>
+</body>
+
+</html>

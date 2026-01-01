@@ -15,13 +15,11 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.GenerationType;
-import lombok.Data;
 
 @Entity
-@Data
 @Table(name = "appointments")
 public class AppointmentEntity {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long appointmentId;
@@ -60,88 +58,114 @@ public class AppointmentEntity {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
+
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-	public Long getAppointmentId() {
-		return appointmentId;
-	}
-	public BigDecimal getTotalPrice() {
-		return totalPrice;
-	}
-	public void setTotalPrice(BigDecimal totalPrice) {
-		this.totalPrice = totalPrice;
-	}
-	public void setAppointmentId(Long appointmentId) {
-		this.appointmentId = appointmentId;
-	}
-	public LocalDateTime getStartDateTime() {
-		return startDateTime;
-	}
-	public void setStartDateTime(LocalDateTime startDateTime) {
-		this.startDateTime = startDateTime;
-	}
-	public LocalDateTime getEndDateTime() {
-		return endDateTime;
-	}
-	public void setEndDateTime(LocalDateTime endDateTime) {
-		this.endDateTime = endDateTime;
-	}
-	public AppointmentStatus getStatus() {
-		return status;
-	}
-	public void setStatus(AppointmentStatus status) {
-		this.status = status;
-	}
-	public String getCustomerNotes() {
-		return customerNotes;
-	}
-	public void setCustomerNotes(String customerNotes) {
-		this.customerNotes = customerNotes;
-	}
-	public String getAdminNotes() {
-		return adminNotes;
-	}
-	public void setAdminNotes(String adminNotes) {
-		this.adminNotes = adminNotes;
-	}
-	public LocalDateTime getApprovedAt() {
-		return approvedAt;
-	}
-	public void setApprovedAt(LocalDateTime approvedAt) {
-		this.approvedAt = approvedAt;
-	}
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
-	public LocalDateTime getUpdatedAt() {
-		return updatedAt;
-	}
-	public void setUpdatedAt(LocalDateTime updatedAt) {
-		this.updatedAt = updatedAt;
-	}
-	public UserEntity getCustomer() {
-		return customer;
-	}
-	public void setCustomer(UserEntity customer) {
-		this.customer = customer;
-	}
 
-	public ServiceEntity getService() {
-		return service;
-	}
-	public void setService(ServiceEntity service) {
-		this.service = service;
-	}
-	public UserEntity getApprovedBy() {
-		return approvedBy;
-	}
-	public void setApprovedBy(UserEntity approvedBy) {
-		this.approvedBy = approvedBy;
-	}
-	
+    public Long getAppointmentId() {
+        return appointmentId;
+    }
+
+    public void setAppointmentId(Long appointmentId) {
+        this.appointmentId = appointmentId;
+    }
+
+    public LocalDateTime getStartDateTime() {
+        return startDateTime;
+    }
+
+    public void setStartDateTime(LocalDateTime startDateTime) {
+        this.startDateTime = startDateTime;
+    }
+
+    public LocalDateTime getEndDateTime() {
+        return endDateTime;
+    }
+
+    public void setEndDateTime(LocalDateTime endDateTime) {
+        this.endDateTime = endDateTime;
+    }
+
+    public AppointmentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AppointmentStatus status) {
+        this.status = status;
+    }
+
+    public String getCustomerNotes() {
+        return customerNotes;
+    }
+
+    public void setCustomerNotes(String customerNotes) {
+        this.customerNotes = customerNotes;
+    }
+
+    public String getAdminNotes() {
+        return adminNotes;
+    }
+
+    public void setAdminNotes(String adminNotes) {
+        this.adminNotes = adminNotes;
+    }
+
+    public LocalDateTime getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(LocalDateTime approvedAt) {
+        this.approvedAt = approvedAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public UserEntity getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(UserEntity customer) {
+        this.customer = customer;
+    }
+
+    public UserEntity getStaff() {
+        return staff;
+    }
+
+    public void setStaff(UserEntity staff) {
+        this.staff = staff;
+    }
+
+    public ServiceEntity getService() {
+        return service;
+    }
+
+    public void setService(ServiceEntity service) {
+        this.service = service;
+    }
+
+    public UserEntity getApprovedBy() {
+        return approvedBy;
+    }
+
+    public void setApprovedBy(UserEntity approvedBy) {
+        this.approvedBy = approvedBy;
+    }
+
 }
