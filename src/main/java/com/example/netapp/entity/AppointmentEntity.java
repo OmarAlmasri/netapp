@@ -1,5 +1,6 @@
 package com.example.netapp.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -43,10 +44,8 @@ public class AppointmentEntity {
     @JoinColumn(name = "customer_id")
     private UserEntity customer;
 
-    @ManyToOne
-    @JoinColumn(name = "staff_id")
-    private UserEntity staff;
-
+    @Column(precision = 10, scale = 2, nullable = false)
+    private BigDecimal totalPrice;
     @ManyToOne
     @JoinColumn(name = "service_id")
     private ServiceEntity service;

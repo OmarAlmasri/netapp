@@ -1,6 +1,8 @@
 package com.example.netapp.controllers;
 
 
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,6 +12,8 @@ import com.example.netapp.dto.responses.LoginResponse;
 import com.example.netapp.dto.responses.SignupResponse;
 import com.example.netapp.dto.responses.TokenResponse;
 import com.example.netapp.entity.UserEntity;
+import com.example.netapp.entity.UserRole;
+import com.example.netapp.exceptions.HttpException;
 import com.example.netapp.repository.UserRepository;
 import com.example.netapp.services.JwtService;
 
@@ -26,7 +30,8 @@ public class AuthController {
         this.encoder = encoder;
         this.jwt = jwt;
     }
-
+	
+    
     @PostMapping("/signup")
     public SignupResponse signup(@RequestBody SignupRequest req) {
         if (repo.findByEmail(req.email()).isPresent()) {
@@ -45,13 +50,47 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest req) {
         UserEntity user = repo.findByEmail(req.email())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new HttpException(HttpStatus.BAD_REQUEST,"Invalid Email"));
 
         if (!encoder.matches(req.password(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new HttpException(HttpStatus.BAD_REQUEST,"Invalid password");
         }
 
         String token = jwt.generateToken(user.getUserId(),user.getRole() ,user.getEmail(),user.getUsername());
         return new LoginResponse(user ,token);
     }
+    
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/signup-staff")
+    public SignupResponse signup_staff(@RequestBody SignupRequest req) {
+        if (repo.findByEmail(req.email()).isPresent()) {
+            throw new HttpException(HttpStatus.CONFLICT,"User already exists");
+        }
+
+        UserEntity user = new UserEntity();
+        user.setEmail(req.email());
+        user.setUsername(req.username());
+        user.setPassword(encoder.encode(req.password()));
+        user.setRole(UserRole.STAFF);
+
+        repo.save(user);
+        return new SignupResponse("success" , user);
+    }
+    
+    @PostMapping("/signup-admin")
+    public SignupResponse signup_admin(@RequestBody SignupRequest req) {
+        if (repo.findByEmail(req.email()).isPresent()) {
+            throw new HttpException(HttpStatus.CONFLICT,"User already exists");
+        }
+
+        UserEntity user = new UserEntity();
+        user.setEmail(req.email());
+        user.setUsername(req.username());
+        user.setPassword(encoder.encode(req.password()));
+        user.setRole(UserRole.ADMIN);
+
+        repo.save(user);
+        return new SignupResponse("success" , user);
+    } 
+    
 }

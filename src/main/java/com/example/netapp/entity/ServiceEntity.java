@@ -1,8 +1,11 @@
 package com.example.netapp.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -26,13 +29,19 @@ public class ServiceEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    private Integer durationMinutes;
+    // this price means the price per hour . 
     private Double price;
-    private Boolean isActive;
+    private Boolean isActive = true;
 
-    @ManyToOne
-    @JoinColumn(name = "provider_id")
-    private UserEntity provider;
+    // Minutes between appointments
+    private Integer bufferMinutes = 0;
+
+    @ElementCollection
+    @CollectionTable(
+        name = "service_working_hours",
+        joinColumns = @JoinColumn(name = "service_id")
+    )
+    private List<ServiceWorkingHours> workingHours;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
