@@ -50,7 +50,20 @@ public class UserEntity implements UserDetails {
     @JsonIgnore
     @Enumerated(EnumType.STRING)
     private UserRole role = UserRole.CUSTOMER;
-	public long getUserId() {
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    public long getUserId() {
 		return userId;
 	}
 	public void setUserId(long userId) {
@@ -62,14 +75,12 @@ public class UserEntity implements UserDetails {
 	public void setEmail(String email) {
 		this.email = email;
 	}
-	@Override 
 	public String getUsername() {
 		return username;
 	}
 	public void setUsername(String username) {
 		this.username = username;
 	}
-	@Override
 	public String getPassword() {
 		return password;
 	}
@@ -82,10 +93,10 @@ public class UserEntity implements UserDetails {
 	public void setRole(UserRole role) {
 		this.role = role;
 	}
-    
-    
-    
-    @JsonIgnore
+	
+	
+	
+	@JsonIgnore
 	@Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
     	System.out.println("inside the getAuthorities function from the UserEntity");

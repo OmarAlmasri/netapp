@@ -10,5 +10,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 @Repository
 public interface ServiceRepository extends JpaRepository<ServiceEntity, Long> {
-    List<ServiceEntity> findByIsActiveTrue();
+    List<ServiceEntity> findAllByActiveTrue();
 }

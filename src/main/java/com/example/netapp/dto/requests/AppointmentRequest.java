@@ -4,6 +4,6 @@ import java.time.LocalDateTime;
 
 public record AppointmentRequest(
 		LocalDateTime startDateTime,
-		LocalDateTime endDateTime,
+		int sessionsBooked,
 		Long serviceId
 		) {}

@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import com.example.netapp.entity.AppointmentEntity;
 import com.example.netapp.entity.NotificationEntity;
 import com.example.netapp.entity.NotificationType;
 import com.example.netapp.entity.UserEntity;
+import com.example.netapp.entity.UserRole;
 import com.example.netapp.repository.NotificationRepository;
 import com.example.netapp.repository.UserRepository;
 
@@ -31,6 +33,7 @@ public class NotificationService {
     private UserRepository userRepository;
 
     @Transactional
+    @Async
     public void sendNotificationToUser(UserEntity user, String title, String message, NotificationType type,
             AppointmentEntity appointment) {
 
@@ -60,6 +63,7 @@ public class NotificationService {
     }
 
     @Transactional
+    @Async
     public void notifyAppointmentCreated(AppointmentEntity appointment) {
         sendNotificationToUser(
                 appointment.getCustomer(),
@@ -68,26 +72,28 @@ public class NotificationService {
                 NotificationType.APPOINTMENT_CREATED,
                 appointment);
 
+        List<UserEntity> admins = userRepository.findByRole(UserRole.ADMIN);
+        for(UserEntity admin : admins) {
         sendNotificationToUser(
-                appointment.getStaff(),
+                admin,
                 "New Appointment Assignment",
                 "You have been assigned a new appointment pending approval.",
                 NotificationType.APPOINTMENT_CREATED,
                 appointment);
+        }
     }
 
     @Transactional
+    @Async
     public void notifyAppointmentApproved(AppointmentEntity appointment) {
         sendNotificationToUser(appointment.getCustomer(), "Appointment Approved",
                 "Your appointment has been approved and confirmed.", NotificationType.APPOINTMENT_APPROVED,
                 appointment);
 
-        sendNotificationToUser(appointment.getStaff(), "Appointment Confirmed",
-                "An appointment has been confirmed on your schedule.", NotificationType.APPOINTMENT_APPROVED,
-                appointment);
     }
 
     @Transactional
+    @Async
     public void notifyAppointmentRejected(AppointmentEntity appointment, String reason) {
         String message = "Your appointment has been rejected." + (reason != null ? " Reason: " + reason : "");
 
@@ -96,6 +102,7 @@ public class NotificationService {
     }
 
     @Transactional
+    @Async
     public void notifyAppointmentCancelled(AppointmentEntity appointment, UserEntity cancelledBy) {
         String message = "Your appointment has been cancelled."
                 + (cancelledBy != null ? " Cancelled by: " + cancelledBy.getUsername() : "");
@@ -109,17 +116,21 @@ public class NotificationService {
                     appointment);
         }
 
-        if (cancelledBy.getUserId() != appointment.getStaff().getUserId()) {
+        if (cancelledBy.getRole() == UserRole.CUSTOMER) {
+        List<UserEntity> admins = userRepository.findByRole(UserRole.ADMIN);
+        for(UserEntity admin : admins) {
             sendNotificationToUser(
-                    appointment.getStaff(),
+                    admin,// we should find a solution for this one . 
                     "Appointment Cancelled",
                     message,
                     NotificationType.APPOINTMENT_CANCELLED,
                     appointment);
         }
+        }
     }
 
     @Transactional
+    @Async
     public void markAsRead(Long notificationId, UserEntity user) {
         NotificationEntity notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
@@ -134,6 +145,7 @@ public class NotificationService {
     }
 
     @Transactional
+    @Async
     public void markAllAsRead(UserEntity user) {
         List<NotificationEntity> unreadNotifications = notificationRepository
                 .findByUserAndIsReadFalseOrderBySentAtDesc(user);
@@ -163,6 +175,7 @@ public class NotificationService {
      * @param type    Notification type
      */
     @Transactional
+    @Async
     public void broadcastNotification(String title, String message, NotificationType type) {
         userRepository.findAll().forEach(user -> {
             sendNotificationToUser(user, title, message, type, null);
@@ -179,6 +192,7 @@ public class NotificationService {
      * @throws RuntimeException if user not found
      */
     @Transactional
+    @Async
     public void sendNotificationToUserById(Long userId, String title, String message, NotificationType type) {
         UserEntity targetUser = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));

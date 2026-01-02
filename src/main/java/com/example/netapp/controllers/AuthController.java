@@ -2,6 +2,7 @@ package com.example.netapp.controllers;
 
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -33,22 +34,24 @@ public class AuthController {
 	
     
     @PostMapping("/signup")
-    public SignupResponse signup(@RequestBody SignupRequest req) {
+    public ResponseEntity<SignupResponse> signup(@RequestBody SignupRequest req) {
         if (repo.findByEmail(req.email()).isPresent()) {
-            throw new RuntimeException("User already exists");
+            throw new HttpException(HttpStatus.BAD_REQUEST,"User already exists");
         }
-
+        if(req.password() == null || req.username() == null)
+        	throw new HttpException(HttpStatus.BAD_REQUEST,"the values for signin should be { email , username , password }");
+        
         UserEntity user = new UserEntity();
         user.setEmail(req.email());
         user.setUsername(req.username());
         user.setPassword(encoder.encode(req.password()));
 
         repo.save(user);
-        return new SignupResponse("success" , user);
+        return ResponseEntity.ok( new SignupResponse("success" , user));
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest req) {
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest req) {
         UserEntity user = repo.findByEmail(req.email())
                 .orElseThrow(() -> new HttpException(HttpStatus.BAD_REQUEST,"Invalid Email"));
 
@@ -57,7 +60,7 @@ public class AuthController {
         }
 
         String token = jwt.generateToken(user.getUserId(),user.getRole() ,user.getEmail(),user.getUsername());
-        return new LoginResponse(user ,token);
+        return ResponseEntity.ok(new LoginResponse(user ,token));
     }
     
     @PreAuthorize("hasRole('ADMIN')")

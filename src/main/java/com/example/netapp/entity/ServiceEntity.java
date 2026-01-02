@@ -22,109 +22,91 @@ public class ServiceEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long serviceId;
+    private Long id;
 
     private String serviceName;
 
-    @Column(columnDefinition = "TEXT")
     private String description;
 
     // this price means the price per hour . 
     private Double price;
-    private Boolean isActive = true;
+    private Boolean active = true;
 
     // Minutes between appointments
-    private Integer bufferMinutes = 0;
+    private Integer durationMinutes ;
 
-    @ElementCollection
-    @CollectionTable(
-        name = "service_working_hours",
-        joinColumns = @JoinColumn(name = "service_id")
-    )
-    private List<ServiceWorkingHours> workingHours;
 
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 
-    public Long getServiceId() {
-        return serviceId;
-    }
+	public Long getServiceId() {
+		return id;
+	}
 
-    public void setServiceId(Long serviceId) {
-        this.serviceId = serviceId;
-    }
 
-    public String getServiceName() {
-        return serviceName;
-    }
+	public void setServiceId(Long serviceId) {
+		this.id = serviceId;
+	}
 
-    public void setServiceName(String serviceName) {
-        this.serviceName = serviceName;
-    }
 
-    public String getDescription() {
-        return description;
-    }
+	public String getServiceName() {
+		return serviceName;
+	}
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
 
-    public Integer getDurationMinutes() {
-        return durationMinutes;
-    }
+	public void setServiceName(String serviceName) {
+		this.serviceName = serviceName;
+	}
 
-    public void setDurationMinutes(Integer durationMinutes) {
-        this.durationMinutes = durationMinutes;
-    }
 
-    public Double getPrice() {
-        return price;
-    }
+	public String getDescription() {
+		return description;
+	}
 
-    public void setPrice(Double price) {
-        this.price = price;
-    }
 
-    public Boolean getIsActive() {
-        return isActive;
-    }
+	public void setDescription(String description) {
+		this.description = description;
+	}
 
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
 
-    public UserEntity getProvider() {
-        return provider;
-    }
+	public Double getPrice() {
+		return price;
+	}
 
-    public void setProvider(UserEntity provider) {
-        this.provider = provider;
-    }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+	public void setPrice(Double price) {
+		this.price = price;
+	}
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
+	public Boolean getActive() {
+		return active;
+	}
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+	public void setActive(Boolean active) {
+		this.active = active;
+	}
+
+
+	public Integer getDurationMinutes() {
+		return durationMinutes;
+	}
+
+
+	public void setDurationMinutes(Integer durationMinutes) {
+		this.durationMinutes = durationMinutes;
+	}
+
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+    
 }
